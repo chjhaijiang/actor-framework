@@ -29,6 +29,7 @@
 #include <type_traits>
 
 #include "caf/fwd.hpp"
+#include "caf/sec.hpp"
 #include "caf/error.hpp"
 #include "caf/extend.hpp"
 #include "caf/local_actor.hpp"
@@ -39,6 +40,8 @@
 #include "caf/stream_stage_impl.hpp"
 #include "caf/stream_source_impl.hpp"
 #include "caf/stream_result_trait.hpp"
+
+#include "caf/to_string.hpp"
 
 #include "caf/policy/greedy.hpp"
 #include "caf/policy/anycast.hpp"
@@ -432,6 +435,10 @@ public:
       CAF_LOG_ERROR("add_sink called outside of a message handler");
       return dummy_res;
     }
+    if (!mptr->stages.empty()) {
+      CAF_LOG_ERROR("cannot create a stream sink in the middle of a pipeline");
+      return dummy_res;
+    }
     using impl = stream_sink_impl<Fun, Finalize>;
     std::unique_ptr<upstream_policy> p{new policy::greedy};
     auto ptr = make_counted<impl>(this, std::move(p), std::move(mptr->sender),
@@ -472,7 +479,7 @@ public:
   message_category categorize(mailbox_element& x);
 
   /// Tries to consume `x`.
-  invoke_message_result consume(mailbox_element& x);
+  virtual invoke_message_result consume(mailbox_element& x);
 
   /// Tries to consume `x`.
   void consume(mailbox_element_ptr x);
